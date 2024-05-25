@@ -1,0 +1,231 @@
+
+==========================================================================================================================================
+1.Setup two amazon EC2 instance,each in a separate vpc.
+
+2.install and configure an nginx server on one of the instance,which should be located within a private subnet of its respective vpc
+
+3.Configure the second EC2 instance ,situated in a private subnet of the other VPC,to establish communication with nginx server
+
+==========================================================================================================================================
+
+
+===============================================================================================
+########################### Step 1 ############################################################
+===============================================================================================
+===============================================================================================
+PROBLEM_1: Setup two amazon EC2 instance,each in a separate vpc.
+===============================================================================================
+
+####  Create a VPC:
+1.Create >> VPC_1
+2.Specify an IPv4 CIDR block>>> 10.0.0.0/16.
+3.Leave IPv6 CIDR block as "No IPv6 CIDR Block".
+4.Tenancy: Default.
+5.Click "Create VPC".
+----------------------------------------------------------------------------------------------------------------------------------
+###### Create a Subnet:
+In the VPC Dashboard, select "Subnets" and then "Create subnet".
+
+1.Choose my vpc that i just created >> VPC_1
+2.Specify a name for the subnet, vpc1_subnet
+3.Select an Availability Zone (AZ), >>> us-east-1a.
+4.Specify an IPv4 CIDR block, 10.0.1.0/24.   >>>>----(less than VPC)----<<<<<
+5.Click "Create subnet".
+
+----------------------------------------------------------------------------------------------------------------------------------
+########## Create an Internet Gateway:
+
+1.Gateway Nme >>>> vpc1_IGW
+2.Click "Create internet gateway".
+3.Attach the Internet Gateway to the VPC (VPC_1) by selecting the gateway and choosing "Actions" > "Attach to VPC".
+
+----------------------------------------------------------------------------------------------------------------------------------
+##### Update the Route Table:
+
+In the VPC Dashboard, select "Route Tables".
+
+1. Choose the route table associated with my VPC (VPC_1)
+2.Go to the "Routes" tab and click "Edit routes".
+3.Add a route with 0.0.0.0/0 as the destination and the Internet Gateway (vpc1_IGW) as the target.
+4.Click "Save routes".
+
+----------------------------------------------------------------------------------------------------------------------------------
+==========================================================
+Step 2: Create the Second VPC
+
+####  Create a VPC:
+1.Create >> VPC_2
+2.Specify an IPv4 CIDR block>>> 10.1.0.0/16
+3.Leave IPv6 CIDR block as "No IPv6 CIDR Block".
+4.Tenancy: Default.
+5.Click "Create VPC".
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+##### Create a Subnet:
+
+In the VPC Dashboard, select "Subnets" and then "Create subnet".
+
+1.Choose my vpc that i just created >> VPC_2
+2.Specify a name for the subnet, vpc2_subnet
+3.Select an Availability Zone (AZ), >>> us-east-1a.
+4.Specify an IPv4 CIDR block, 10.1.1.0/24   >>>>----(less than VPC)----<<<<<
+5.Click "Create subnet".
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+##### Create an Internet Gateway:
+1.Gateway Nme >>>> vpc2_IGW
+2.Click "Create internet gateway".
+3.Attach the Internet Gateway to the VPC (VPC_2) by selecting the gateway and choosing "Actions" > "Attach to VPC_2".
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+###### Update the Route Table:
+In the VPC Dashboard, select "Route Tables".
+
+1. Choose the route table associated with my VPC (VPC_2)
+2.Go to the "Routes" tab and click "Edit routes".
+3.Add a route with 0.0.0.0/0 as the destination and the Internet Gateway (vpc1_IGW) as the target.
+4.Click "Save routes".
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+##### Step 3: Launch an EC2 Instance in Each VPC
+===================================================
+#### Launch an EC2 Instance in VPC1:
+
+1.Navigate to the EC2 Dashboard.
+2.Click on "Launch Instance".
+3.Choose an Amazon Machine Image ubuntu
+4.Choose an Instance Type, e.g., t2.micro.
+5.Configure instance details:
+	Network: Select VPC1.
+	Subnet: Select vpc1_subnet
+
+6.Add storage (use default).
+7.Add tags (optional).
+8.Configure security group:
+9.Create a new security group, e.g., SG1.
+10.Add rules to allow traffic (e.g., SSH access via port 22).
+11.Review and launch the instance.
+12.Download and save the key pair for SSH access.
+
+----------------------------------------------------------------------------------------------------------------------------------
+##### Launch an EC2 Instance in VPC2:
+
+1.Navigate to the EC2 Dashboard.
+2.Click on "Launch Instance".
+3.Choose an Amazon Machine Image ubuntu
+4.Choose an Instance Type, e.g., t2.micro.
+5.Configure instance details:
+	Network: Select VPC2
+	Subnet: Select vpc2_subnet
+
+6.Add storage (use default).
+7.Add tags (optional).
+8.Configure security group:
+9.Create a new security group, e.g., SG1.
+10.Add rules to allow traffic (e.g., SSH access via port 22).
+11.Review and launch the instance.
+12.Download and save the key pair for SSH access.
+
+----------------------------------------------------------------------------------------------------------------------------------
+###### Step 4: Verify the Setup
+
+#####Connect to Instances:
+
+Use SSH to connect to both instances to verify they are running correctly.
+
+Ensure that the security group rules allow for SSH access (port 22).
+
+----------------------------------------------------------------------------------------------------------------------------------
+#####Check Connectivity:
+
+Ensure that each instance can connect to the internet if required (via the Internet Gateway).
+Verify the instances cannot communicate with each other directly since they are in separate VPCs.
+
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+
+=========================================================================
+########################### Step 2 ######################################
+========================================================================= 
+
+=============================================================================================================================================
+PROBLEM_2: Install and configure an nginx server on one of the instance,which should be located within a private subnet of its respective vpc
+=============================================================================================================================================
+
+Install and Configure Nginx on the First EC2 Instance
+------------------------------------------------------------------------
+
+1.Connect to the First EC2 Instance:
+2.SSH into the instance using its private IP address from your local machine or a bastion host.
+
+1.Install Nginx:
+-------------------
+
+>>>sudo apt update
+>>>sudo apt install nginx -y
+
+2.Configure Nginx:
+-----------------------
+Ensure Nginx is running:
+
+>>>sudo systemctl start nginx
+>>>sudo systemctl enable nginx
+
+3.Check Nginx configuration:
+----------------------------
+>>>sudo nano /etc/nginx/nginx.conf
+
+Ensure the server block is listening on the private IP (default is okay).
+
+4.Modify Security Group:
+-----------------------------------------------------------------------------
+1.Navigate to the Security Group associated with this instance.
+2.Add a rule to allow HTTP (port 80) from the second VPC's CIDR block (e.g., 10.1.0.0/16).
+
+
+=========================================================================
+########################### Step 3 ######################################
+========================================================================= 
+
+=============================================================================================================================================
+PROBLEM_3: Configure the second EC2 instance ,situated in a private subnet of the other VPC,to establish communication with nginx server
+=============================================================================================================================================
+
+Enable Communication Between the Two Instances
+------------------------------------------------------------------------
+1.Create a VPC Peering Connection:
+------------------------------------------------------------------------
+1.Navigate to the VPC Dashboard.
+2.Click on "Peering Connections" and "Create Peering Connection".
+3.Choose the first VPC as the requester and the second VPC as the accepter.
+4.Click "Create Peering Connection".
+5.Accept the peering request in the second VPC's console.
+
+
+2.Update Route Tables:
+--------------------------------------------------------------------------
+1.For the first VPC: (VPC_1)
+2.Navigate to "Route Tables" in the VPC Dashboard.
+3.Select the route table associated with the first VPC.
+4.Add a route: Destination is the CIDR block of the second VPC (e.g., 10.1.0.0/16), target is the VPC peering connection.
+
+3.For the second VPC:
+-------------------------------------------------------------------------------
+1.Repeat the above steps, but this time the destination is the CIDR block of the first VPC (e.g., 10.0.0.0/16).
+2.Modify Security Group of the Second Instance:
+3.Navigate to the Security Group of the second instance.
+Add a rule to allow outbound traffic on port 80 (HTTP) to the first VPC’s CIDR block.
+
+4.Test Communication:
+----------------------------------------------------------------------------------
+1.SSH into the second EC2 instance.
+2.Use curl to test the connection to the Nginx server on the first instance’s private IP.
+
+>>> curl http://<private-ip-of-first-instance>
+
+If everything is set up correctly, you should see the default Nginx welcome page indicating successful communication between the two instances.
