@@ -1,0 +1,1 @@
+1.Setup two amazon EC2 instance,each in a separate vpc. 2.install and configure an nginx server on one of the instance,which should be located within a private subnet of its respective vpc 3.Configure the second EC2 instance ,situated in a private subnet of the other VPC,to establish communication with nginx server
